@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>할 일 관리 - To-Do App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 애니메이션 */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(100px); }
+    }
+    .slide-in { animation: slideIn 0.3s ease-out; }
+    .slide-out { animation: slideOut 0.3s ease-out forwards; }
+    .completed-text { text-decoration: line-through; color: #9ca3af; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen">
+  <div class="max-w-2xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
+    <!-- 헤더 -->
+    <header class="mb-6 sm:mb-10">
+      <div class="flex items-center justify-center gap-3 sm:gap-4 mb-2">
+        <img src="_Image.png" alt="부광솔루션즈" class="w-12 h-12 sm:w-16 sm:h-16">
+        <h1 class="text-2xl sm:text-4xl font-bold text-gray-800">오늘의 할 일</h1>
+      </div>
+      <p class="text-sm sm:text-base text-gray-500 text-center">간단하게 할 일을 관리하세요</p>
+    </header>
+
+    <!-- 입력창 -->
+    <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          id="todoInput"
+          placeholder="할 일을 입력하세요..."
+          class="flex-1 min-w-0 px-4 py-3 sm:py-4 text-base sm:text-lg border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
+          autofocus
+        />
+        <button
+          id="addBtn"
+          class="w-full sm:w-auto px-6 py-3 sm:py-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors shrink-0"
+        >
+          추가
+        </button>
+      </div>
+    </div>
+
+    <!-- 필터 탭 -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      <button class="filter-btn active px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-colors" data-filter="all">
+        전체 <span id="countAll" class="ml-1 text-sm opacity-70">0</span>
+      </button>
+      <button class="filter-btn px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-colors" data-filter="active">
+        해야 할 일 <span id="countActive" class="ml-1 text-sm opacity-70">0</span>
+      </button>
+      <button class="filter-btn px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-colors" data-filter="completed">
+        완료된 일 <span id="countCompleted" class="ml-1 text-sm opacity-70">0</span>
+      </button>
+    </div>
+
+    <!-- 할 일 목록 -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+      <ul id="todoList" class="divide-y divide-gray-100">
+        <!-- 할 일 항목들이 여기에 추가됩니다 -->
+      </ul>
+      <div id="emptyState" class="p-12 text-center text-gray-400">
+        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <p>아직 할 일이 없습니다</p>
+        <p class="text-sm mt-1">위 입력창에서 새로운 할 일을 추가해보세요!</p>
+      </div>
+    </div>
+
+    <!-- 하단 버튼들 -->
+    <div class="flex justify-between items-center mt-6">
+      <button
+        id="clearCompleted"
+        class="text-sm text-gray-500 hover:text-red-500 transition-colors"
+      >
+        완료된 항목 삭제
+      </button>
+      <button
+        id="exportBtn"
+        class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white rounded-lg shadow hover:shadow-md transition-all"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        내보내기
+      </button>
+    </div>
+
+    <!-- 푸터 -->
+    <footer class="text-center mt-12 text-gray-400 text-sm">
+      <p>데이터는 브라우저에 자동 저장됩니다</p>
+    </footer>
+  </div>
+
+  <script>
+    // ========== 상태 관리 ==========
+    let todos = JSON.parse(localStorage.getItem('todos')) || [];
+    let currentFilter = 'all';
+
+    // ========== DOM 요소 ==========
+    const todoInput = document.getElementById('todoInput');
+    const addBtn = document.getElementById('addBtn');
+    const todoList = document.getElementById('todoList');
+    const emptyState = document.getElementById('emptyState');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const clearCompletedBtn = document.getElementById('clearCompleted');
+    const exportBtn = document.getElementById('exportBtn');
+
+    // ========== 초기화 ==========
+    function init() {
+      render();
+      updateCounts();
+      updateFilterButtons();
+    }
+
+    // ========== 렌더링 ==========
+    function render() {
+      const filteredTodos = getFilteredTodos();
+
+      if (filteredTodos.length === 0) {
+        todoList.innerHTML = '';
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        todoList.innerHTML = filteredTodos.map(todo => createTodoHTML(todo)).join('');
+      }
+    }
+
+    function getFilteredTodos() {
+      switch (currentFilter) {
+        case 'active':
+          return todos.filter(t => !t.completed);
+        case 'completed':
+          return todos.filter(t => t.completed);
+        default:
+          return todos;
+      }
+    }
+
+    function createTodoHTML(todo) {
+      return `
+        <li class="todo-item slide-in flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors group" data-id="${todo.id}">
+          <input
+            type="checkbox"
+            class="w-5 h-5 rounded-full border-2 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+            ${todo.completed ? 'checked' : ''}
+            onchange="toggleTodo(${todo.id})"
+          />
+          <span
+            class="flex-1 text-lg cursor-pointer ${todo.completed ? 'completed-text' : 'text-gray-700'}"
+            ondblclick="editTodo(${todo.id})"
+          >${escapeHTML(todo.text)}</span>
+          <button
+            class="p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+            onclick="deleteTodo(${todo.id})"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </li>
+      `;
+    }
+
+    // ========== CRUD 기능 ==========
+    function addTodo() {
+      const text = todoInput.value.trim();
+      if (!text) return;
+
+      const newTodo = {
+        id: Date.now(),
+        text: text,
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+
+      todos.unshift(newTodo);
+      saveTodos();
+      render();
+      updateCounts();
+      todoInput.value = '';
+      todoInput.focus();
+    }
+
+    function toggleTodo(id) {
+      const todo = todos.find(t => t.id === id);
+      if (todo) {
+        todo.completed = !todo.completed;
+        saveTodos();
+        render();
+        updateCounts();
+      }
+    }
+
+    function deleteTodo(id) {
+      const item = document.querySelector(`[data-id="${id}"]`);
+      if (item) {
+        item.classList.add('slide-out');
+        setTimeout(() => {
+          todos = todos.filter(t => t.id !== id);
+          saveTodos();
+          render();
+          updateCounts();
+        }, 300);
+      }
+    }
+
+    function editTodo(id) {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      const item = document.querySelector(`[data-id="${id}"]`);
+      const span = item.querySelector('span');
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = todo.text;
+      input.className = 'flex-1 px-3 py-1 text-lg border-2 border-indigo-500 rounded-lg focus:outline-none';
+
+      span.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const saveEdit = () => {
+        const newText = input.value.trim();
+        if (newText && newText !== todo.text) {
+          todo.text = newText;
+          saveTodos();
+        }
+        render();
+      };
+
+      input.addEventListener('blur', saveEdit);
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') saveEdit();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') render();
+      });
+    }
+
+    function clearCompleted() {
+      todos = todos.filter(t => !t.completed);
+      saveTodos();
+      render();
+      updateCounts();
+    }
+
+    // ========== 필터링 ==========
+    function setFilter(filter) {
+      currentFilter = filter;
+      updateFilterButtons();
+      render();
+    }
+
+    function updateFilterButtons() {
+      filterBtns.forEach(btn => {
+        const isActive = btn.dataset.filter === currentFilter;
+        btn.classList.toggle('bg-indigo-600', isActive);
+        btn.classList.toggle('text-white', isActive);
+        btn.classList.toggle('text-gray-600', !isActive);
+        btn.classList.toggle('bg-white', !isActive);
+        btn.classList.toggle('shadow', !isActive);
+      });
+    }
+
+    function updateCounts() {
+      const all = todos.length;
+      const completed = todos.filter(t => t.completed).length;
+      const active = all - completed;
+
+      document.getElementById('countAll').textContent = all;
+      document.getElementById('countActive').textContent = active;
+      document.getElementById('countCompleted').textContent = completed;
+    }
+
+    // ========== 저장 및 내보내기 ==========
+    function saveTodos() {
+      localStorage.setItem('todos', JSON.stringify(todos));
+    }
+
+    function exportTodos() {
+      const content = todos.map(t =>
+        `${t.completed ? '[완료]' : '[진행중]'} ${t.text}`
+      ).join('\n');
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `할일목록_${new Date().toLocaleDateString('ko-KR')}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ========== 유틸리티 ==========
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ========== 이벤트 리스너 ==========
+    addBtn.addEventListener('click', addTodo);
+    todoInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addTodo();
+    });
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+    });
+
+    clearCompletedBtn.addEventListener('click', clearCompleted);
+    exportBtn.addEventListener('click', exportTodos);
+
+    // ========== 앱 시작 ==========
+    init();
+  </script>
+</body>
+</html>

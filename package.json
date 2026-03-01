@@ -1,0 +1,8 @@
+{
+  "name": "todo-app",
+  "version": "1.0.0",
+  "description": "Simple To-Do App",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}

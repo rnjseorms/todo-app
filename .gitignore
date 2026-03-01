@@ -1,0 +1,41 @@
+# Vercel
+.vercel/
+
+# 가상환경
+venv/
+
+# 빌드 산출물
+todo-app.apk
+*.apk
+
+# 빈 폴더
+assets/
+
+# Claude 로컬 설정
+.claude/
+
+# Flutter 제외 항목
+todo_app_flutter/build/
+todo_app_flutter/.dart_tool/
+todo_app_flutter/.idea/
+todo_app_flutter/.metadata
+todo_app_flutter/.flutter-plugins
+todo_app_flutter/.flutter-plugins-dependencies
+todo_app_flutter/*.iml
+
+# Android 제외 항목
+todo_app_flutter/android/.gradle/
+todo_app_flutter/android/local.properties
+todo_app_flutter/android/*.iml
+todo_app_flutter/android/app/*.iml
+
+# iOS 제외 항목
+todo_app_flutter/ios/Flutter/ephemeral/
+todo_app_flutter/ios/Flutter/flutter_export_environment.sh
+todo_app_flutter/ios/Flutter/Generated.xcconfig
+todo_app_flutter/ios/Runner/GeneratedPluginRegistrant.*
+
+# 기타
+*.log
+.DS_Store
+Thumbs.db
